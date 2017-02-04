@@ -35,7 +35,7 @@ MAX="`echo "@PJL INFO VARIABLES" | nc -w3 printer 9100 |\
 # connect and set maximum timeout for current job with PJL
 while true; do echo "@PJL SET TIMEOUT=$MAX" | nc printer 9100; done
 ```
-- With PRET, a sample session would look like below:
+- With PRET, a sample session to get timeout values would look like below:
 
 ```shell
 ./pret.py -q printer pjl
